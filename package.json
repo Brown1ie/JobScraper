@@ -1,5 +1,6 @@
 {
   "name": "job-scraper-web",
+  "homepage": "https://brown1ie.github.io/JobScraper",
   "private": true,
   "version": "0.0.0",
   "type": "module",
