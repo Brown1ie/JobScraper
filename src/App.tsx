@@ -6,7 +6,7 @@ import JobResults from './components/JobResults';
 
 const queryClient = new QueryClient();
 
-function App() {
+export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <div className="min-h-screen bg-gray-50">
