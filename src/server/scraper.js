@@ -39,13 +39,15 @@ export async function scrapeJobs(query, location, keywords) {
 
         console.log('Found potential job:', { title, company, jobLocation });
 
-        // Skip UI elements and empty titles
+        // Only skip navigation and filter UI elements
         if (title && 
-            !['Skip to main content', 'All', 'Choose area', 'Jobs', 'Entry level', 'No degree'].includes(title) &&
+            !['Skip to main content', 'All', 'Choose area', 'Jobs'].includes(title) &&
             title !== '') {
           const shouldAdd = keywords.length === 0 || keywords.some(keyword => 
             description.toLowerCase().includes(keyword.toLowerCase()) ||
-            title.toLowerCase().includes(keyword.toLowerCase())
+            title.toLowerCase().includes(keyword.toLowerCase()) ||
+            (title + ' ' + description).toLowerCase().includes('no degree') ||
+            (title + ' ' + description).toLowerCase().includes('degree not required')
           );
 
           if (shouldAdd) {
@@ -62,7 +64,9 @@ export async function scrapeJobs(query, location, keywords) {
               url,
               keywords: keywords.filter(keyword => 
                 description.toLowerCase().includes(keyword.toLowerCase()) ||
-                title.toLowerCase().includes(keyword.toLowerCase())
+                title.toLowerCase().includes(keyword.toLowerCase()) ||
+                (title + ' ' + description).toLowerCase().includes('no degree') ||
+                (title + ' ' + description).toLowerCase().includes('degree not required')
               ),
               datePosted: new Date().toISOString()
             });
@@ -80,24 +84,15 @@ export async function scrapeJobs(query, location, keywords) {
       return [
         {
           id: generateId(),
-          title: "Software Developer",
-          company: "Tech Corp",
+          title: "No suitable jobs found",
+          company: "None",
           location: location || "Remote",
-          description: "We are looking for a software developer to join our team.",
+          description: "Try a different search term or location",
           url: "https://example.com/job1",
           keywords: keywords,
           datePosted: new Date().toISOString()
-        },
-        {
-          id: generateId(),
-          title: "Frontend Developer",
-          company: "Web Solutions",
-          location: location || "Remote",
-          description: "Frontend developer position available.",
-          url: "https://example.com/job2",
-          keywords: keywords,
-          datePosted: new Date().toISOString()
         }
+        
       ];
     }
 
