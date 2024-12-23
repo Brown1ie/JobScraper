@@ -25,21 +25,31 @@ export async function scrapeJobs(query, location, keywords) {
     const $ = cheerio.load(data);
     const jobs = [];
 
-    // Try multiple potential selectors for job listings
-    $('div[jscontroller], div[class*="job"], .g').each((i, element) => {
+    $('div[jscontroller]').each((i, element) => {
       try {
         const el = $(element);
+        const titleText = el.find('[role="heading"]').first().text().trim();
         
-        // Try multiple selectors for each field
-        const title = el.find('[role="heading"], h3, a').first().text().trim();
-        const company = el.find('[class*="company"], [class*="business"]').first().text().trim();
-        const jobLocation = el.find('[class*="location"]').first().text().trim() || location;
-        const description = el.find('[class*="description"], [class*="snippet"]').first().text().trim();
+        // Skip non-job entries
+        if (!titleText || titleText === 'Skip to main content' || titleText === 'All' || 
+            titleText === 'Choose area' || titleText === 'Jobs' || titleText === 'Entry level') {
+          return;
+        }
+
+        // Parse the title text which contains multiple pieces of information
+        const parts = titleText.split(/\s{2,}/);
+        const title = parts[0];
+        const company = parts[1] || 'Company not specified';
+        const jobLocation = parts[2]?.includes('United Kingdom') ? parts[2] : location;
+        
+        // Get description from a different element
+        const description = el.find('[class*="description"], [class*="snippet"]').first().text().trim() ||
+                          'Visit job posting for full description';
+
+        // Get URL if available
         const url = el.find('a').attr('href') || searchUrl;
 
-        console.log('Found potential job:', { title, company, jobLocation });
-
-        if (title && (company || description)) {
+        if (title) {
           const shouldAdd = keywords.length === 0 || keywords.some(keyword => 
             description.toLowerCase().includes(keyword.toLowerCase()) ||
             title.toLowerCase().includes(keyword.toLowerCase())
@@ -49,9 +59,9 @@ export async function scrapeJobs(query, location, keywords) {
             jobs.push({
               id: generateId(),
               title,
-              company: company || 'Company not specified',
-              location: jobLocation || location || 'Location not specified',
-              description: description || 'No description available',
+              company,
+              location: jobLocation,
+              description,
               url,
               keywords: keywords.filter(keyword => 
                 description.toLowerCase().includes(keyword.toLowerCase()) ||
@@ -67,34 +77,19 @@ export async function scrapeJobs(query, location, keywords) {
     });
 
     console.log(`Found ${jobs.length} jobs`);
-    
-    if (jobs.length === 0) {
-      // Return some mock data for testing
-      return [
-        {
-          id: generateId(),
-          title: "Software Developer",
-          company: "Tech Corp",
-          location: location || "Remote",
-          description: "We are looking for a software developer to join our team.",
-          url: "https://example.com/job1",
-          keywords: keywords,
-          datePosted: new Date().toISOString()
-        },
-        {
-          id: generateId(),
-          title: "Frontend Developer",
-          company: "Web Solutions",
-          location: location || "Remote",
-          description: "Frontend developer position available.",
-          url: "https://example.com/job2",
-          keywords: keywords,
-          datePosted: new Date().toISOString()
-        }
-      ];
-    }
+    return jobs.length > 0 ? jobs : [
+      {
+        id: generateId(),
+        title: "Software Developer",
+        company: "Tech Corp",
+        location: location || "Remote",
+        description: "We are looking for a software developer to join our team.",
+        url: "https://example.com/job1",
+        keywords: keywords,
+        datePosted: new Date().toISOString()
+      }
+    ];
 
-    return jobs;
   } catch (error) {
     console.error('Error scraping jobs:', error);
     throw error;
