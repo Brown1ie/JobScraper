@@ -23,6 +23,8 @@ export default function SearchForm() {
             <Briefcase className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
             <input
               type="text"
+              id="job-query"
+              name="job-query"
               placeholder="Job title or keyword"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
@@ -35,6 +37,8 @@ export default function SearchForm() {
             <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
             <input
               type="text"
+              id="job-location"
+              name="job-location"
               placeholder="Location"
               value={location}
               onChange={(e) => setLocation(e.target.value)}
@@ -47,6 +51,8 @@ export default function SearchForm() {
       <div>
         <input
           type="text"
+          id="job-keywords"
+          name="job-keywords"
           placeholder="Keywords (comma separated)"
           value={keywords}
           onChange={(e) => setKeywords(e.target.value)}
@@ -57,6 +63,8 @@ export default function SearchForm() {
       <div>
         <button
           type="submit"
+          id="search-submit"
+          name="search-submit"
           className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
         >
           Search Jobs
