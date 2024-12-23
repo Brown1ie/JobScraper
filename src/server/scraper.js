@@ -1,5 +1,5 @@
+import * as cheerio from 'cheerio';
 import axios from 'axios';
-import cheerio from 'cheerio';
 
 function generateId() {
   return Math.random().toString(36).substr(2, 9);
