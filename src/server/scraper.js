@@ -23,15 +23,22 @@ export async function scrapeJobs(query, location, keywords) {
     const $ = cheerio.load(data);
     const jobs = [];
 
-    // Try different selectors that Google might use
-    $('[class*="job-"], [class*="Job"], .iFjolb, .g').each((i, element) => {
+    // Log the HTML structure for debugging
+    console.log('HTML Structure:', $.html());
+
+    // Try multiple potential selectors for job listings
+    $('div.gws-plugins-horizon-jobs__tl-lif, div.g, div[jscontroller], div[data-ved]').each((i, element) => {
       try {
         const el = $(element);
-        const title = el.find('h3, .BjJfJf, [class*="title"]').first().text().trim();
-        const company = el.find('.company, .vNEEBe, [class*="company"]').first().text().trim();
-        const jobLocation = el.find('.location, .Qk80Jf, [class*="location"]').first().text().trim() || location;
-        const description = el.find('.description, .HBvzbc, [class*="description"], [class*="snippet"]').first().text().trim();
-        const url = el.find('a').attr('href') || searchUrl;
+        
+        // Try multiple selectors for each field
+        const title = el.find('div[role="heading"], h3, .jcs-JobTitle').first().text().trim();
+        const company = el.find('.company-name, .business-name, div[class*="company"]').first().text().trim();
+        const jobLocation = el.find('div[class*="location"], .location').first().text().trim() || location;
+        const description = el.find('div[class*="description"], div[class*="snippet"], .job-snippet').first().text().trim();
+        const url = el.find('a[href*="google.com/search"]').attr('href') || searchUrl;
+
+        console.log('Found potential job:', { title, company, jobLocation, description: description.substring(0, 100) });
 
         if (title && (company || description)) {
           const shouldAdd = keywords.length === 0 || keywords.some(keyword => 
@@ -61,8 +68,16 @@ export async function scrapeJobs(query, location, keywords) {
     });
 
     console.log(`Found ${jobs.length} jobs`);
+    
+    // If no jobs found, log a sample of the HTML for debugging
     if (jobs.length === 0) {
-      console.log('Page content:', data.substring(0, 1000)); // Log first 1000 chars for debugging
+      console.log('No jobs found. Sample HTML:', data.substring(0, 2000));
+      console.log('Available classes:', {
+        headings: $('div[role="heading"]').length,
+        jobTitles: $('.jcs-JobTitle').length,
+        companies: $('.company-name').length,
+        locations: $('div[class*="location"]').length
+      });
     }
 
     return jobs;
