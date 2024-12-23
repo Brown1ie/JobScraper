@@ -5,13 +5,16 @@ import { useSearchStore } from '../stores/searchStore';
 export default function SearchForm() {
   const [query, setQuery] = useState('');
   const [location, setLocation] = useState('');
-  const [keywords, setKeywords] = useState('no degree, degree not required, no qualification, entry level');
+  const [keywords, setKeywords] = useState('');
   const setSearch = useSearchStore((state) => state.setSearch);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (typeof setSearch === 'function') {
-      setSearch(query, location, keywords.split(',').map(k => k.trim()));
+      const keywordArray = keywords
+        ? keywords.split(',').map(k => k.trim()).filter(k => k.length > 0)
+        : [];
+      setSearch(query, location, keywordArray);
     }
   };
 

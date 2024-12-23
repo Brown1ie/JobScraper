@@ -1,6 +1,9 @@
 import axios from 'axios';
-import * as cheerio from 'cheerio';
-import { generateId } from '../utils/helpers.js';
+import cheerio from 'cheerio';
+
+function generateId() {
+  return Math.random().toString(36).substr(2, 9);
+}
 
 export async function scrapeJobs(query, location, keywords) {
   const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(query + ' ' + location + ' jobs')}&ibp=htl;jobs`;
@@ -15,20 +18,21 @@ export async function scrapeJobs(query, location, keywords) {
     const $ = cheerio.load(data);
     const jobs = [];
 
-    $('.job-card').each((i, element) => {
-      const title = $(element).find('.title').text().trim();
-      const company = $(element).find('.company').text().trim();
-      const jobLocation = $(element).find('.location').text().trim() || location;
-      const description = $(element).find('.description').text().trim();
-      const url = $(element).find('a').attr('href');
+    // Update selectors to match Google Jobs HTML structure
+    $('.iFjolb').each((i, element) => {
+      const title = $(element).find('.BjJfJf').text().trim();
+      const company = $(element).find('.vNEEBe').text().trim();
+      const jobLocation = $(element).find('.Qk80Jf').text().trim() || location;
+      const description = $(element).find('.HBvzbc').text().trim();
+      const url = $(element).find('a').attr('href') || searchUrl;
       
-      // Check if job matches keywords
-      const matchesKeywords = keywords.some(keyword => 
+      // Only apply keyword filtering if keywords array is not empty
+      const shouldAdd = keywords.length === 0 || keywords.some(keyword => 
         description.toLowerCase().includes(keyword.toLowerCase()) ||
         title.toLowerCase().includes(keyword.toLowerCase())
       );
 
-      if (matchesKeywords) {
+      if (shouldAdd) {
         jobs.push({
           id: generateId(),
           title,
@@ -44,6 +48,11 @@ export async function scrapeJobs(query, location, keywords) {
         });
       }
     });
+
+    // If no jobs found, log the HTML for debugging
+    if (jobs.length === 0) {
+      console.log('No jobs found. HTML structure:', data);
+    }
 
     return jobs;
   } catch (error) {
