@@ -39,17 +39,24 @@ export async function scrapeJobs(query, location, keywords) {
 
         console.log('Found potential job:', { title, company, jobLocation });
 
-        if (title && (company || description)) {
+        // Skip UI elements and empty titles
+        if (title && 
+            !['Skip to main content', 'All', 'Choose area', 'Jobs', 'Entry level', 'No degree'].includes(title) &&
+            title !== '') {
           const shouldAdd = keywords.length === 0 || keywords.some(keyword => 
             description.toLowerCase().includes(keyword.toLowerCase()) ||
             title.toLowerCase().includes(keyword.toLowerCase())
           );
 
           if (shouldAdd) {
+            // Extract company from title if not found separately
+            const titleParts = title.split(/\s{2,}/);
+            const extractedCompany = titleParts[1] || company || 'Company not specified';
+            
             jobs.push({
               id: generateId(),
-              title,
-              company: company || 'Company not specified',
+              title: titleParts[0],
+              company: extractedCompany,
               location: jobLocation || location || 'Location not specified',
               description: description || 'No description available',
               url,
