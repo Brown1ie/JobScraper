@@ -34,10 +34,20 @@ export async function scrapeJobs(query, location, keywords) {
         const title = el.find('[role="heading"], h3, a').first().text().trim();
         const company = el.find('[class*="company"], [class*="business"]').first().text().trim();
         const jobLocation = el.find('[class*="location"]').first().text().trim() || location;
-        const description = el.find('[class*="description"], [class*="snippet"]').first().text().trim();
+        
+        // Try multiple ways to get the description
+        let description = el.find('[class*="description"], [class*="snippet"], [class*="VwiC3b"]').first().text().trim();
+        if (!description) {
+          // Try to get description from the title text after company name
+          const fullText = title.split(/\s{2,}/);
+          if (fullText.length > 2) {
+            description = fullText.slice(2).join(' ').trim();
+          }
+        }
+
         const url = el.find('a').attr('href') || searchUrl;
 
-        console.log('Found potential job:', { title, company, jobLocation });
+        console.log('Found potential job:', { title, company, jobLocation, description });
 
         // Only skip navigation and filter UI elements
         if (title && 
@@ -55,12 +65,19 @@ export async function scrapeJobs(query, location, keywords) {
             const titleParts = title.split(/\s{2,}/);
             const extractedCompany = titleParts[1] || company || 'Company not specified';
             
+            // Clean up the description
+            const cleanDescription = description
+              .replace(/•\s+via\s+[^•]+/, '') // Remove "via LinkedIn" etc.
+              .replace(/\s+ago[^•]*/, '')     // Remove "X days ago"
+              .replace(/Full-time.*$/, '')     // Remove "Full-time" etc.
+              .trim();
+
             jobs.push({
               id: generateId(),
               title: titleParts[0],
               company: extractedCompany,
               location: jobLocation || location || 'Location not specified',
-              description: description || 'No description available',
+              description: cleanDescription || 'No description available',
               url,
               keywords: keywords.filter(keyword => 
                 description.toLowerCase().includes(keyword.toLowerCase()) ||
