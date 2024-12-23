@@ -1,7 +1,7 @@
 import axios from 'axios';
 import type { Job } from '../types/Job';
 
-const API_URL = 'https://job-scanner-api.onrender.com/api';
+const API_URL = 'https://jobscraper-api-d1hj.onrender.com/api';
 
 export async function searchJobs(
   query: string,
