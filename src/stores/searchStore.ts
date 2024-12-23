@@ -11,5 +11,7 @@ export const useSearchStore = create<SearchState>((set) => ({
   query: '',
   location: '',
   keywords: [],
-  setSearch: (query, location, keywords) => set({ query, location, keywords })
+  setSearch: (query: string, location: string, keywords: string[]) => {
+    set({ query, location, keywords });
+  }
 }));

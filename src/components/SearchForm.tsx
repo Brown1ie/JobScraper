@@ -1,19 +1,18 @@
 import React, { useState } from 'react';
-import { Search, MapPin, Briefcase } from 'lucide-react';
+import { Briefcase, MapPin } from 'lucide-react';
+import { useSearchStore } from '../stores/searchStore';
 
-interface SearchFormProps {
-  onSearch: (query: string, location: string, keywords: string[]) => void;
-  isLoading: boolean;
-}
-
-export default function SearchForm({ onSearch, isLoading }: SearchFormProps) {
+export default function SearchForm() {
   const [query, setQuery] = useState('');
   const [location, setLocation] = useState('');
   const [keywords, setKeywords] = useState('no degree, degree not required, no qualification, entry level');
+  const setSearch = useSearchStore((state) => state.setSearch);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSearch(query, location, keywords.split(',').map(k => k.trim()));
+    if (typeof setSearch === 'function') {
+      setSearch(query, location, keywords.split(',').map(k => k.trim()));
+    }
   };
 
   return (
@@ -46,26 +45,23 @@ export default function SearchForm({ onSearch, isLoading }: SearchFormProps) {
       </div>
       
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Filter Keywords (comma-separated)
-        </label>
         <input
           type="text"
+          placeholder="Keywords (comma separated)"
           value={keywords}
           onChange={(e) => setKeywords(e.target.value)}
           className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          placeholder="Enter keywords separated by commas"
         />
       </div>
 
-      <button
-        type="submit"
-        disabled={isLoading}
-        className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-      >
-        <Search className="h-5 w-5" />
-        {isLoading ? 'Searching...' : 'Search Jobs'}
-      </button>
+      <div>
+        <button
+          type="submit"
+          className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+        >
+          Search Jobs
+        </button>
+      </div>
     </form>
   );
 }
