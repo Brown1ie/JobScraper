@@ -6,7 +6,7 @@ function generateId() {
 }
 
 export async function scrapeJobs(query, location, keywords) {
-  const searchUrl = `https://www.google.com/search?q=site:linkedin.com+${encodeURIComponent(query)}+${encodeURIComponent(location)}+jobs`;
+  const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(query + ' ' + location + ' jobs')}&ibp=htl;jobs`;
   
   try {
     console.log('Fetching jobs from:', searchUrl);
@@ -25,25 +25,23 @@ export async function scrapeJobs(query, location, keywords) {
     const $ = cheerio.load(data);
     const jobs = [];
 
-    $('.g').each((i, element) => {
+    // Try multiple potential selectors for job listings
+    $('div[jscontroller], div[class*="job"], .g').each((i, element) => {
       try {
         const el = $(element);
-        const title = el.find('h3').text().trim();
-        const url = el.find('a').attr('href');
-        const snippet = el.find('.VwiC3b').text().trim();
         
-        if (title && url && (title.toLowerCase().includes('job') || 
-            title.toLowerCase().includes('hiring') || 
-            title.toLowerCase().includes('career'))) {
-          
-          const companyMatch = title.match(/at\s+([^|-]+)/) || title.match(/- ([^-]+) -/);
-          const company = companyMatch ? companyMatch[1].trim() : 'Company not specified';
-          
-          const locationMatch = snippet.match(/in\s+([^.]+)/);
-          const jobLocation = locationMatch ? locationMatch[1].trim() : location;
+        // Try multiple selectors for each field
+        const title = el.find('[role="heading"], h3, a').first().text().trim();
+        const company = el.find('[class*="company"], [class*="business"]').first().text().trim();
+        const jobLocation = el.find('[class*="location"]').first().text().trim() || location;
+        const description = el.find('[class*="description"], [class*="snippet"]').first().text().trim();
+        const url = el.find('a').attr('href') || searchUrl;
 
+        console.log('Found potential job:', { title, company, jobLocation });
+
+        if (title && (company || description)) {
           const shouldAdd = keywords.length === 0 || keywords.some(keyword => 
-            snippet.toLowerCase().includes(keyword.toLowerCase()) ||
+            description.toLowerCase().includes(keyword.toLowerCase()) ||
             title.toLowerCase().includes(keyword.toLowerCase())
           );
 
@@ -51,12 +49,12 @@ export async function scrapeJobs(query, location, keywords) {
             jobs.push({
               id: generateId(),
               title,
-              company,
-              location: jobLocation,
-              description: snippet,
+              company: company || 'Company not specified',
+              location: jobLocation || location || 'Location not specified',
+              description: description || 'No description available',
               url,
               keywords: keywords.filter(keyword => 
-                snippet.toLowerCase().includes(keyword.toLowerCase()) ||
+                description.toLowerCase().includes(keyword.toLowerCase()) ||
                 title.toLowerCase().includes(keyword.toLowerCase())
               ),
               datePosted: new Date().toISOString()
@@ -64,31 +62,31 @@ export async function scrapeJobs(query, location, keywords) {
           }
         }
       } catch (err) {
-        console.error('Error processing search result:', err);
+        console.error('Error processing job listing:', err);
       }
     });
 
     console.log(`Found ${jobs.length} jobs`);
     
     if (jobs.length === 0) {
-      console.log('No jobs found, falling back to mock data');
+      // Return some mock data for testing
       return [
         {
           id: generateId(),
-          title: `${query} Developer`,
+          title: "Software Developer",
           company: "Tech Corp",
           location: location || "Remote",
-          description: `We are looking for a ${query} developer to join our team in ${location}.`,
+          description: "We are looking for a software developer to join our team.",
           url: "https://example.com/job1",
           keywords: keywords,
           datePosted: new Date().toISOString()
         },
         {
           id: generateId(),
-          title: `Senior ${query} Engineer`,
+          title: "Frontend Developer",
           company: "Web Solutions",
           location: location || "Remote",
-          description: `Senior ${query} position available in ${location}.`,
+          description: "Frontend developer position available.",
           url: "https://example.com/job2",
           keywords: keywords,
           datePosted: new Date().toISOString()
