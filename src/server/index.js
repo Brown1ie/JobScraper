@@ -5,10 +5,17 @@ import { scrapeJobs } from './scraper.js';
 import { setupCache } from './cache.js';
 
 const app = express();
-const port = process.env.PORT || 3001; // Changed default port to 3001
+const port = process.env.PORT || 10000;
 
 // Setup middleware
-app.use(cors());
+app.use(cors({
+  origin: [
+    'http://localhost:5173',
+    'https://brown1ie.github.io'
+  ],
+  methods: ['GET', 'POST'],
+  credentials: true
+}));
 app.use(express.json());
 
 // Rate limiting
@@ -24,38 +31,55 @@ app.use(limiter);
 // Setup cache
 const cache = setupCache();
 
+// Add a health check endpoint
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok' });
+});
+
 // Routes
 app.post('/api/jobs', async (req, res) => {
   try {
+    console.log('Received search request:', req.body);
+    
     const { query, location, keywords } = req.body;
+    
+    if (!query) {
+      return res.status(400).json({ error: 'Query is required' });
+    }
+
     const cacheKey = `${query}-${location}-${keywords.join(',')}`;
+    console.log('Cache key:', cacheKey);
     
     const cachedResults = cache.get(cacheKey);
     if (cachedResults) {
+      console.log('Returning cached results');
       return res.json(cachedResults);
     }
     
+    console.log('Scraping jobs...');
     const jobs = await scrapeJobs(query, location, keywords);
+    console.log(`Found ${jobs.length} jobs`);
+    
     cache.set(cacheKey, jobs);
     
     res.json(jobs);
   } catch (error) {
-    console.error('Error fetching jobs:', error);
-    res.status(500).json({ error: 'Failed to fetch jobs' });
+    console.error('Server error:', error);
+    res.status(500).json({ 
+      error: 'Failed to fetch jobs',
+      details: error.message 
+    });
   }
 });
 
-app.set('trust proxy', 1);
+app.use((err, req, res, next) => {
+  console.error('Unhandled error:', err);
+  res.status(500).json({ 
+    error: 'Internal server error',
+    details: err.message
+  });
+});
 
-// Error handling for server start
-const server = app.listen(port, () => {
+app.listen(port, () => {
   console.log(`Server running at http://localhost:${port}`);
-}).on('error', (err) => {
-  if (err.code === 'EADDRINUSE') {
-    console.error(`Port ${port} is already in use. Please try a different port.`);
-    process.exit(1);
-  } else {
-    console.error('Failed to start server:', err);
-    process.exit(1);
-  }
 });
